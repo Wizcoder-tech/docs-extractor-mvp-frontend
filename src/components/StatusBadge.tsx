@@ -1,3 +1,5 @@
+import Icon from "./Icon";
+import type { IconName } from "./Icon";
 import type { CheckStatus, ProcessingStatus, ShipmentStatus } from "../types";
 
 type AnyStatus = ProcessingStatus | ShipmentStatus | CheckStatus;
@@ -13,24 +15,25 @@ const LABELS: Record<string, string> = {
   warning: "Needs Review",
 };
 
-const ICONS: Record<string, string> = {
-  pending: "○",
-  processing: "◐",
-  success: "✓",
-  failed: "✕",
-  completed: "✓",
-  match: "✓",
-  mismatch: "✕",
-  warning: "!",
+const ICON_NAMES: Record<string, IconName> = {
+  pending: "circle",
+  success: "check",
+  completed: "check",
+  match: "check",
+  failed: "x",
+  mismatch: "x",
+  warning: "alert-triangle",
 };
 
 export default function StatusBadge({ status }: { status: AnyStatus }) {
-  const isSpinning = status === "processing";
+  const isProcessing = status === "processing";
   return (
     <span className={`badge badge--${status}`}>
-      <span className={`badge-icon${isSpinning ? " badge-icon--spin" : ""}`} aria-hidden>
-        {ICONS[status] ?? "•"}
-      </span>
+      {isProcessing ? (
+        <span className="spinner badge-icon" aria-hidden />
+      ) : (
+        <Icon name={ICON_NAMES[status] ?? "circle"} className="badge-icon" />
+      )}
       {LABELS[status] ?? status}
     </span>
   );

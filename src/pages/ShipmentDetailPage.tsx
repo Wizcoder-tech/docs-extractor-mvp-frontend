@@ -10,6 +10,7 @@ import {
 } from "../api/client";
 import ComparisonView from "../components/ComparisonView";
 import ConfirmButton from "../components/ConfirmButton";
+import Icon from "../components/Icon";
 import StatusBadge from "../components/StatusBadge";
 import type { ComparisonReport, DocType, ShipmentDetail } from "../types";
 
@@ -29,7 +30,9 @@ function ExtractionNote({ note }: { note: string }) {
 
   return (
     <div className="extraction-note" title="Flagged by the extraction model — review this document manually">
-      <span className="extraction-note-label">⚠ Needs review</span>
+      <span className="extraction-note-label">
+        <Icon name="alert-triangle" /> Needs review
+      </span>
       <p className="extraction-note-text">{display}</p>
       {isLong && (
         <button type="button" className="extraction-note-toggle" onClick={() => setExpanded((v) => !v)}>
@@ -106,9 +109,21 @@ export default function ShipmentDetailPage() {
   if (!shipment) {
     return (
       <div className="page">
-        <div className="empty-state">
-          <span className="spinner spinner--lg" aria-hidden />
-          <p>Loading shipment…</p>
+        <div className="page-header page-header--row">
+          <div>
+            <span className="skeleton" style={{ width: "6rem", height: "0.9rem", marginBottom: "0.6rem" }} />
+            <span className="skeleton" style={{ width: "16rem", height: "1.85rem", marginTop: "0.3rem" }} />
+          </div>
+          <span className="skeleton skeleton-pill" style={{ width: "7rem", height: "2rem" }} />
+        </div>
+        <div className="document-cards">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="skeleton-card">
+              <span className="skeleton" style={{ width: "60%", height: "1.1rem" }} />
+              <span className="skeleton" style={{ width: "85%", height: "0.9rem" }} />
+              <span className="skeleton" style={{ width: "100%", height: "2.6rem" }} />
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -134,6 +149,7 @@ export default function ShipmentDetailPage() {
             busyLabel="Deleting…"
             className="btn btn--ghost-danger btn--sm"
             title="Delete this shipment, its documents, and its comparison history"
+            icon={<Icon name="trash" />}
             onConfirm={handleDeleteShipment}
           />
         </div>
@@ -160,7 +176,7 @@ export default function ShipmentDetailPage() {
                   className="cache-hit-badge"
                   title="Identical file was already extracted previously — the extraction model was not called again"
                 >
-                  ⚡ reused cached extraction
+                  <Icon name="bolt" /> reused cached extraction
                 </span>
               )}
               {doc.error_message && <p className="document-error">{doc.error_message}</p>}
@@ -187,7 +203,9 @@ export default function ShipmentDetailPage() {
                       <span className="spinner" aria-hidden /> Uploading…
                     </>
                   ) : (
-                    <>✎ Replace &amp; reprocess</>
+                    <>
+                      <Icon name="pencil" /> Replace &amp; reprocess
+                    </>
                   )}
                 </button>
               </div>

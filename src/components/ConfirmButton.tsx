@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 
 interface ConfirmButtonProps {
   onConfirm: () => void | Promise<void>;
@@ -7,6 +8,7 @@ interface ConfirmButtonProps {
   busyLabel?: string;
   className?: string;
   title?: string;
+  icon?: ReactNode;
 }
 
 /**
@@ -21,6 +23,7 @@ export default function ConfirmButton({
   busyLabel = "Working…",
   className = "",
   title,
+  icon,
 }: ConfirmButtonProps) {
   const [armed, setArmed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -81,6 +84,7 @@ export default function ConfirmButton({
         timerRef.current = window.setTimeout(disarm, 4000);
       }}
     >
+      {icon}
       {label}
     </button>
   );

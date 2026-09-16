@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiRequestError, deleteShipment, listShipments } from "../api/client";
 import ConfirmButton from "../components/ConfirmButton";
+import Icon from "../components/Icon";
 import StatusBadge from "../components/StatusBadge";
 import type { ShipmentListItem } from "../types";
 
@@ -35,7 +36,7 @@ export default function ShipmentListPage() {
           <p className="page-subtitle">All uploaded shipment document sets and their comparison status.</p>
         </div>
         <Link to="/upload" className="btn btn--primary">
-          <span aria-hidden>+</span> New Shipment
+          <Icon name="plus" /> New Shipment
         </Link>
       </div>
 
@@ -43,17 +44,43 @@ export default function ShipmentListPage() {
       {rowError && <div className="alert alert--error">{rowError}</div>}
 
       {shipments === null && !error && (
-        <div className="empty-state">
-          <span className="spinner spinner--lg" aria-hidden />
-          <p>Loading shipments…</p>
+        <div className="table-scroll">
+          <table className="shipment-table">
+            <thead>
+              <tr>
+                <th>Reference</th>
+                <th>Customer</th>
+                <th>Status</th>
+                <th>Uploaded</th>
+                <th aria-label="Actions" />
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <tr key={i}>
+                  <td>
+                    <span className="skeleton" style={{ width: "65%", height: "1.1rem" }} />
+                  </td>
+                  <td>
+                    <span className="skeleton" style={{ width: "45%", height: "1.1rem" }} />
+                  </td>
+                  <td>
+                    <span className="skeleton skeleton-pill" style={{ width: "6rem", height: "1.7rem" }} />
+                  </td>
+                  <td>
+                    <span className="skeleton" style={{ width: "55%", height: "1.1rem" }} />
+                  </td>
+                  <td />
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
       {shipments && shipments.length === 0 && (
         <div className="empty-state">
-          <span className="empty-state-icon" aria-hidden>
-            📄
-          </span>
+          <Icon name="file-text" className="empty-state-icon" />
           <p>No shipments uploaded yet.</p>
           <Link to="/upload" className="btn btn--primary">
             Upload your first document set
@@ -95,6 +122,7 @@ export default function ShipmentListPage() {
                       busyLabel="Deleting…"
                       className="btn btn--ghost-danger btn--sm"
                       title="Delete this shipment and its documents"
+                      icon={<Icon name="trash" />}
                       onConfirm={() => handleDelete(s.id)}
                     />
                   </td>

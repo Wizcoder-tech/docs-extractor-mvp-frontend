@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
 import type { ComparisonReport, FieldCheck } from "../types";
+import Icon from "./Icon";
 import StatusBadge from "./StatusBadge";
 
 const DOC_LABELS: Record<string, string> = {
   commercial_invoice: "Invoice",
   packing_list: "Packing List",
   bill_of_lading: "Bill of Lading",
+  shipment_date: "Shipment Date",
 };
 
 type Filter = "all" | "issues" | "mismatches";
@@ -65,9 +67,7 @@ function CollapsibleGroup({
     <details className="check-group" open={hasIssue}>
       <summary className="check-group-summary">
         <span className="check-group-summary-left">
-          <span className="check-group-chevron" aria-hidden>
-            ▸
-          </span>
+          <Icon name="chevron-right" className="check-group-chevron" />
           <span className="check-group-title">{title}</span>
         </span>
         <GroupSummaryPill checks={checks} />
@@ -85,7 +85,7 @@ function CheckItem({ check }: { check: FieldCheck }) {
         <span className="check-item-field">
           {isCriticalIssue && (
             <span className="critical-tag" title="Safety/regulatory issue — verify before clearance">
-              ⚠ DG
+              <Icon name="alert-triangle" /> Critical
             </span>
           )}
           {check.field_label}
@@ -205,21 +205,21 @@ export default function ComparisonView({ report }: { report: ComparisonReport })
         </div>
         <div className="summary-card summary-card--match">
           <span className="summary-icon" aria-hidden>
-            ✓
+            <Icon name="check" size="1.1rem" />
           </span>
           <span className="summary-value">{summary.matched}</span>
           <span className="summary-label">Matched</span>
         </div>
         <div className="summary-card summary-card--mismatch">
           <span className="summary-icon" aria-hidden>
-            ✕
+            <Icon name="x" size="1.1rem" />
           </span>
           <span className="summary-value">{summary.mismatched}</span>
           <span className="summary-label">Mismatches</span>
         </div>
         <div className="summary-card summary-card--warning">
           <span className="summary-icon" aria-hidden>
-            !
+            <Icon name="alert-triangle" size="1.1rem" />
           </span>
           <span className="summary-value">{summary.warnings}</span>
           <span className="summary-label">Needs Review</span>

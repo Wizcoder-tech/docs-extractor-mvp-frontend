@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import type { DragEvent } from "react";
+import Icon from "./Icon";
 
 interface FileDropzoneProps {
   label: string;
@@ -70,9 +71,7 @@ export default function FileDropzone({ label, hint, file, onChange }: FileDropzo
           </div>
         ) : (
           <>
-            <span className="dropzone-icon" aria-hidden>
-              ⬆
-            </span>
+            <Icon name="upload-cloud" className="dropzone-icon" />
             <span>Drop PDF here or click to browse</span>
             {hint && <span className="dropzone-hint">{hint}</span>}
           </>

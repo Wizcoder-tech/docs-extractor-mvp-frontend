@@ -8,10 +8,8 @@ export default function App() {
     <div className="app-shell">
       <header className="app-header">
         <Link to="/shipments" className="app-title">
-          <span className="app-logo" aria-hidden>
-            📦
-          </span>
-          Navitrax Docs Extractor
+          <img src="/favicon.svg" alt="" className="logomark" />
+          Docs Extractor
         </Link>
         <nav>
           <NavLink to="/upload" className={({ isActive }) => (isActive ? "nav-link nav-link--active" : "nav-link")}>
