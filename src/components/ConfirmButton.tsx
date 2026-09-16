@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 interface ConfirmButtonProps {
   onConfirm: () => void | Promise<void>;
@@ -9,12 +10,17 @@ interface ConfirmButtonProps {
   className?: string;
   title?: string;
   icon?: ReactNode;
+  confirmTitle?: string;
+  confirmMessage?: string;
 }
 
 /**
- * Two-step destructive action: first click arms it (swaps to an explicit
- * Confirm/Cancel pair for a few seconds), second click actually fires. Avoids
- * both an easy-to-mis-click single button and a jarring native confirm().
+ * Destructive action gated behind a modal confirmation dialog (rendered via
+ * a portal so it always sits above the page regardless of where the button
+ * lives -- a table row, a page header, etc). A modal blocks the rest of the
+ * UI until explicitly dismissed, so unlike an inline "are you sure" toggle
+ * it needs no auto-dismiss timer -- there's no "left armed and mis-clicked
+ * later" risk once the action requires a deliberate dialog interaction.
  */
 export default function ConfirmButton({
   onConfirm,
@@ -24,20 +30,35 @@ export default function ConfirmButton({
   className = "",
   title,
   icon,
+  confirmTitle = "Are you sure?",
+  confirmMessage = "This action cannot be undone.",
 }: ConfirmButtonProps) {
-  const [armed, setArmed] = useState(false);
+  const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const timerRef = useRef<number | null>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    return () => {
-      if (timerRef.current) window.clearTimeout(timerRef.current);
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
     };
-  }, []);
+    document.addEventListener("keydown", onKeyDown);
+    document.body.style.overflow = "hidden";
+    cancelRef.current?.focus();
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [open]);
 
-  const disarm = () => {
-    if (timerRef.current) window.clearTimeout(timerRef.current);
-    setArmed(false);
+  const handleConfirm = async () => {
+    setOpen(false);
+    setBusy(true);
+    try {
+      await onConfirm();
+    } finally {
+      setBusy(false);
+    }
   };
 
   if (busy) {
@@ -49,43 +70,38 @@ export default function ConfirmButton({
     );
   }
 
-  if (armed) {
-    return (
-      <span className="confirm-group">
-        <button
-          type="button"
-          className="btn btn--danger-solid btn--sm"
-          onClick={async () => {
-            disarm();
-            setBusy(true);
-            try {
-              await onConfirm();
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          {confirmLabel}
-        </button>
-        <button type="button" className="btn-link" onClick={disarm}>
-          Cancel
-        </button>
-      </span>
-    );
-  }
-
   return (
-    <button
-      type="button"
-      className={className}
-      title={title}
-      onClick={() => {
-        setArmed(true);
-        timerRef.current = window.setTimeout(disarm, 4000);
-      }}
-    >
-      {icon}
-      {label}
-    </button>
+    <>
+      <button type="button" className={className} title={title} onClick={() => setOpen(true)}>
+        {icon}
+        {label}
+      </button>
+      {open &&
+        createPortal(
+          <div className="modal-overlay" onClick={() => setOpen(false)}>
+            <div
+              className="modal-dialog"
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="confirm-dialog-title"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 id="confirm-dialog-title" className="modal-title">
+                {confirmTitle}
+              </h2>
+              <p className="modal-message">{confirmMessage}</p>
+              <div className="modal-actions">
+                <button ref={cancelRef} type="button" className="btn btn--ghost btn--sm" onClick={() => setOpen(false)}>
+                  Cancel
+                </button>
+                <button type="button" className="btn btn--danger-solid btn--sm" onClick={handleConfirm}>
+                  {confirmLabel}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }

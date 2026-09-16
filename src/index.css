@@ -308,20 +308,59 @@ main {
   text-decoration: underline;
 }
 
-.confirm-group {
-  display: inline-flex;
+/* Confirmation modal */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 27, 46, 0.45);
+  display: flex;
   align-items: center;
-  gap: 0.35rem;
-  background: var(--color-error-bg);
-  padding: 0.25rem 0.35rem 0.25rem 0.75rem;
-  border-radius: 999px;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 1000;
+  animation: modal-fade-in 150ms ease-out;
 }
-.confirm-group::before {
-  content: "Are you sure?";
-  font-size: 0.88rem;
-  color: var(--color-error);
-  font-weight: 700;
-  margin-right: 0.2rem;
+.modal-dialog {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 1.75rem;
+  max-width: 26rem;
+  width: 100%;
+  animation: modal-pop-in 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.modal-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.2rem;
+}
+.modal-message {
+  margin: 0 0 1.5rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.7rem;
+}
+@keyframes modal-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes modal-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .upload-form {
