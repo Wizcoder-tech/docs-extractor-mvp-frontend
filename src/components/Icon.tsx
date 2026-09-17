@@ -14,7 +14,8 @@ export type IconName =
   | "plus"
   | "chevron-right"
   | "panel-left"
-  | "search";
+  | "search"
+  | "pen";
 
 const PATHS: Record<IconName, ReactNode> = {
   check: <path d="M20 6 9 17l-5-5" />,
@@ -39,7 +40,9 @@ const PATHS: Record<IconName, ReactNode> = {
       <path d="M15 3l6 6" />
     </>
   ),
-  bolt: <path d="M13 2 3 14h7l-1 8 11-14h-7z" fill="currentColor" stroke="none" />,
+  bolt: (
+    <path d="M13 2 3 14h7l-1 8 11-14h-7z" fill="currentColor" stroke="none" />
+  ),
   "file-text": (
     <>
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
@@ -76,6 +79,11 @@ const PATHS: Record<IconName, ReactNode> = {
       <path d="m21 21-4.35-4.35" />
     </>
   ),
+  pen: (
+    <>
+      <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+    </>
+  ),
 };
 
 interface IconProps extends Omit<SVGProps<SVGSVGElement>, "name"> {
@@ -83,7 +91,12 @@ interface IconProps extends Omit<SVGProps<SVGSVGElement>, "name"> {
   size?: number | string;
 }
 
-export default function Icon({ name, size = "1em", className = "", ...rest }: IconProps) {
+export default function Icon({
+  name,
+  size = "1em",
+  className = "",
+  ...rest
+}: IconProps) {
   return (
     <svg
       width={size}

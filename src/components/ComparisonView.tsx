@@ -42,7 +42,9 @@ function statusCounts(checks: FieldCheck[]) {
 function GroupSummaryPill({ checks }: { checks: FieldCheck[] }) {
   const { matched, mismatched, warnings } = statusCounts(checks);
   if (mismatched === 0 && warnings === 0) {
-    return <span className="group-pill group-pill--ok">✓ all {matched} matched</span>;
+    return (
+      <span className="group-pill group-pill--ok">✓ all {matched} matched</span>
+    );
   }
   return (
     <span className="group-pill group-pill--issue">
@@ -51,7 +53,11 @@ function GroupSummaryPill({ checks }: { checks: FieldCheck[] }) {
           {mismatched} mismatch{mismatched === 1 ? "" : "es"}
         </span>
       )}
-      {warnings > 0 && <span className="group-pill-count group-pill-count--warning">{warnings} review</span>}
+      {warnings > 0 && (
+        <span className="group-pill-count group-pill-count--warning">
+          {warnings} review
+        </span>
+      )}
     </span>
   );
 }
@@ -83,8 +89,17 @@ function CollapsibleGroup({
   );
 }
 
-function CheckItem({ check, onSelect }: { check: FieldCheck; onSelect?: (check: FieldCheck) => void }) {
-  const isCriticalIssue = check.safety_critical && check.status !== "match" && check.status !== "resolved";
+function CheckItem({
+  check,
+  onSelect,
+}: {
+  check: FieldCheck;
+  onSelect?: (check: FieldCheck) => void;
+}) {
+  const isCriticalIssue =
+    check.safety_critical &&
+    check.status !== "match" &&
+    check.status !== "resolved";
   const isClickable = !!onSelect && CLICKABLE_STATUSES.has(check.status);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -106,25 +121,41 @@ function CheckItem({ check, onSelect }: { check: FieldCheck; onSelect?: (check: 
       <div className="check-item-head">
         <span className="check-item-field">
           {isCriticalIssue && (
-            <span className="critical-tag" title="Safety/regulatory issue — verify before clearance">
+            <span
+              className="critical-tag"
+              title="Safety/regulatory issue — verify before clearance"
+            >
               <Icon name="alert-triangle" /> Critical
             </span>
           )}
           {check.field_label}
         </span>
-        <StatusBadge status={check.status} />
+        <span className="edit-button">
+          <StatusBadge status={check.status} />
+          <div className="edit-icon">
+            <Icon name="pen"></Icon>
+          </div>
+        </span>
       </div>
       <div className="check-item-values">
         <div className="check-value-block">
-          <span className="check-value-label">{DOC_LABELS[check.doc_a_type] ?? check.doc_a_type}</span>
-          <span className="check-value-text">{check.doc_a_value ?? <em className="muted">missing</em>}</span>
+          <span className="check-value-label">
+            {DOC_LABELS[check.doc_a_type] ?? check.doc_a_type}
+          </span>
+          <span className="check-value-text">
+            {check.doc_a_value ?? <em className="muted">missing</em>}
+          </span>
         </div>
         <span className="check-value-arrow" aria-hidden>
           vs
         </span>
         <div className="check-value-block">
-          <span className="check-value-label">{DOC_LABELS[check.doc_b_type] ?? check.doc_b_type}</span>
-          <span className="check-value-text">{check.doc_b_value ?? <em className="muted">missing</em>}</span>
+          <span className="check-value-label">
+            {DOC_LABELS[check.doc_b_type] ?? check.doc_b_type}
+          </span>
+          <span className="check-value-text">
+            {check.doc_b_value ?? <em className="muted">missing</em>}
+          </span>
         </div>
       </div>
       {check.detail && <p className="check-item-detail">{check.detail}</p>}
@@ -138,7 +169,13 @@ function CheckItem({ check, onSelect }: { check: FieldCheck; onSelect?: (check: 
   );
 }
 
-function CheckList({ checks, onSelect }: { checks: FieldCheck[]; onSelect: (check: FieldCheck) => void }) {
+function CheckList({
+  checks,
+  onSelect,
+}: {
+  checks: FieldCheck[];
+  onSelect: (check: FieldCheck) => void;
+}) {
   const issueChecks = checks.filter((c) => c.status !== "match");
   const matchedChecks = checks.filter((c) => c.status === "match");
 
@@ -160,11 +197,16 @@ function CheckList({ checks, onSelect }: { checks: FieldCheck[]; onSelect: (chec
       {matchedChecks.length > 0 && (
         <details className="matched-toggle">
           <summary>
-            ✓ {matchedChecks.length} matched field{matchedChecks.length === 1 ? "" : "s"}
+            ✓ {matchedChecks.length} matched field
+            {matchedChecks.length === 1 ? "" : "s"}
           </summary>
           <div className="check-list check-list--nested">
             {matchedChecks.map((c, i) => (
-              <CheckItem key={`${c.field}-${i}`} check={c} onSelect={onSelect} />
+              <CheckItem
+                key={`${c.field}-${i}`}
+                check={c}
+                onSelect={onSelect}
+              />
             ))}
           </div>
         </details>
@@ -195,13 +237,19 @@ function PairSection({
         <h3>{pairLabel}</h3>
         <span className="pair-section-count">
           {checks.length} checks · {matched} matched
-          {mismatched > 0 ? ` · ${mismatched} mismatch${mismatched === 1 ? "" : "es"}` : ""}
+          {mismatched > 0
+            ? ` · ${mismatched} mismatch${mismatched === 1 ? "" : "es"}`
+            : ""}
           {warnings > 0 ? ` · ${warnings} needs review` : ""}
         </span>
       </div>
 
       {headerChecks.length > 0 && (
-        <CollapsibleGroup title="Header fields" checks={headerChecks} forceOpen={forceOpen}>
+        <CollapsibleGroup
+          title="Header fields"
+          checks={headerChecks}
+          forceOpen={forceOpen}
+        >
           <CheckList checks={headerChecks} onSelect={onSelect} />
         </CollapsibleGroup>
       )}
@@ -239,10 +287,15 @@ export default function ComparisonView({
 
   const filteredChecks = useMemo(() => {
     if (filter === "all") return report.checks;
-    if (filter === "mismatches") return report.checks.filter((c) => c.status === "mismatch");
-    if (filter === "matched") return report.checks.filter((c) => c.status === "match");
-    if (filter === "resolved") return report.checks.filter((c) => c.status === "resolved");
-    return report.checks.filter((c) => c.status === "mismatch" || c.status === "warning");
+    if (filter === "mismatches")
+      return report.checks.filter((c) => c.status === "mismatch");
+    if (filter === "matched")
+      return report.checks.filter((c) => c.status === "match");
+    if (filter === "resolved")
+      return report.checks.filter((c) => c.status === "resolved");
+    return report.checks.filter(
+      (c) => c.status === "mismatch" || c.status === "warning",
+    );
   }, [report.checks, filter]);
 
   const pairGroups = groupBy(filteredChecks, (c) => c.pair_label);
@@ -314,36 +367,60 @@ export default function ComparisonView({
       </div>
 
       <div className="filter-tabs">
-        <button className={filter === "all" ? "active" : ""} onClick={selectFilter("all")}>
+        <button
+          className={filter === "all" ? "active" : ""}
+          onClick={selectFilter("all")}
+        >
           <FlickLabel>
-            All Checks <span className="filter-tab-count">{summary.total_checks}</span>
+            All Checks{" "}
+            <span className="filter-tab-count">{summary.total_checks}</span>
           </FlickLabel>
         </button>
-        <button className={filter === "matched" ? "active" : ""} onClick={selectFilter("matched")}>
+        <button
+          className={filter === "matched" ? "active" : ""}
+          onClick={selectFilter("matched")}
+        >
           <FlickLabel>
-            Matched Only <span className="filter-tab-count">{summary.matched}</span>
+            Matched Only{" "}
+            <span className="filter-tab-count">{summary.matched}</span>
           </FlickLabel>
         </button>
-        <button className={filter === "mismatches" ? "active" : ""} onClick={selectFilter("mismatches")}>
+        <button
+          className={filter === "mismatches" ? "active" : ""}
+          onClick={selectFilter("mismatches")}
+        >
           <FlickLabel>
-            Mismatches Only <span className="filter-tab-count">{summary.mismatched}</span>
+            Mismatches Only{" "}
+            <span className="filter-tab-count">{summary.mismatched}</span>
           </FlickLabel>
         </button>
-        <button className={filter === "issues" ? "active" : ""} onClick={selectFilter("issues")}>
+        <button
+          className={filter === "issues" ? "active" : ""}
+          onClick={selectFilter("issues")}
+        >
           <FlickLabel>
-            Needs Attention <span className="filter-tab-count">{summary.mismatched + summary.warnings}</span>
+            Needs Attention{" "}
+            <span className="filter-tab-count">
+              {summary.mismatched + summary.warnings}
+            </span>
           </FlickLabel>
         </button>
-        <button className={filter === "resolved" ? "active" : ""} onClick={selectFilter("resolved")}>
+        <button
+          className={filter === "resolved" ? "active" : ""}
+          onClick={selectFilter("resolved")}
+        >
           <FlickLabel>
-            Resolved <span className="filter-tab-count">{summary.resolved}</span>
+            Resolved{" "}
+            <span className="filter-tab-count">{summary.resolved}</span>
           </FlickLabel>
         </button>
       </div>
 
       {pairGroups.size === 0 ? (
         <p className="empty-state">
-          {filter === "all" ? "No checks were run." : "No issues found for this filter — everything checked out!"}
+          {filter === "all"
+            ? "No checks were run."
+            : "No issues found for this filter — everything checked out!"}
         </p>
       ) : (
         [...pairGroups.entries()].map(([pairLabel, checks]) => (
