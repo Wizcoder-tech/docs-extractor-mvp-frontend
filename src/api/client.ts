@@ -1,4 +1,11 @@
-import type { ComparisonReport, DocType, ShipmentDetail, ShipmentListItem } from "../types";
+import type {
+  CheckKey,
+  ComparisonReport,
+  DocType,
+  ResolveCheckInput,
+  ShipmentDetail,
+  ShipmentListItem,
+} from "../types";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
@@ -71,6 +78,22 @@ export function replaceDocument(shipmentId: string, docType: DocType, file: File
   return request<ShipmentDetail>(`/api/shipments/${shipmentId}/documents/${docType}`, {
     method: "PUT",
     body: formData,
+  });
+}
+
+export function resolveCheck(shipmentId: string, input: ResolveCheckInput): Promise<ComparisonReport> {
+  return request<ComparisonReport>(`/api/shipments/${shipmentId}/comparison/resolutions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+}
+
+export function reopenCheck(shipmentId: string, key: CheckKey): Promise<ComparisonReport> {
+  const params = new URLSearchParams({ pair: key.pair, field: key.field });
+  if (key.line_item_key) params.set("line_item_key", key.line_item_key);
+  return request<ComparisonReport>(`/api/shipments/${shipmentId}/comparison/resolutions?${params.toString()}`, {
+    method: "DELETE",
   });
 }
 

@@ -13,6 +13,7 @@ const LABELS: Record<string, string> = {
   match: "Match",
   mismatch: "Mismatch",
   warning: "Needs Review",
+  resolved: "Resolved",
 };
 
 const ICON_NAMES: Record<string, IconName> = {
@@ -23,6 +24,7 @@ const ICON_NAMES: Record<string, IconName> = {
   failed: "x",
   mismatch: "x",
   warning: "alert-triangle",
+  resolved: "check",
 };
 
 export default function StatusBadge({ status }: { status: AnyStatus }) {

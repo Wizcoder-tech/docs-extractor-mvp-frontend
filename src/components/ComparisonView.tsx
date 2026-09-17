@@ -2,7 +2,10 @@ import { useMemo, useState } from "react";
 import type { ComparisonReport, FieldCheck } from "../types";
 import FlickLabel from "./FlickLabel";
 import Icon from "./Icon";
+import ResolutionPanel from "./ResolutionPanel";
 import StatusBadge from "./StatusBadge";
+
+const CLICKABLE_STATUSES = new Set(["mismatch", "warning", "resolved"]);
 
 const DOC_LABELS: Record<string, string> = {
   commercial_invoice: "Invoice",
@@ -11,7 +14,7 @@ const DOC_LABELS: Record<string, string> = {
   shipment_date: "Shipment Date",
 };
 
-type Filter = "all" | "issues" | "mismatches" | "matched";
+type Filter = "all" | "issues" | "mismatches" | "matched" | "resolved";
 
 function groupBy<T>(items: T[], keyFn: (item: T) => string): Map<string, T[]> {
   const map = new Map<string, T[]>();
@@ -80,10 +83,26 @@ function CollapsibleGroup({
   );
 }
 
-function CheckItem({ check }: { check: FieldCheck }) {
-  const isCriticalIssue = check.safety_critical && check.status !== "match";
+function CheckItem({ check, onSelect }: { check: FieldCheck; onSelect?: (check: FieldCheck) => void }) {
+  const isCriticalIssue = check.safety_critical && check.status !== "match" && check.status !== "resolved";
+  const isClickable = !!onSelect && CLICKABLE_STATUSES.has(check.status);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!isClickable) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onSelect?.(check);
+    }
+  };
+
   return (
-    <div className={`check-item check-item--${check.status}${isCriticalIssue ? " check-item--critical" : ""}`}>
+    <div
+      className={`check-item check-item--${check.status}${isCriticalIssue ? " check-item--critical" : ""}${isClickable ? " check-item--clickable" : ""}`}
+      role={isClickable ? "button" : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+      onClick={isClickable ? () => onSelect?.(check) : undefined}
+      onKeyDown={handleKeyDown}
+    >
       <div className="check-item-head">
         <span className="check-item-field">
           {isCriticalIssue && (
@@ -109,11 +128,17 @@ function CheckItem({ check }: { check: FieldCheck }) {
         </div>
       </div>
       {check.detail && <p className="check-item-detail">{check.detail}</p>}
+      {check.status === "resolved" && (
+        <p className="check-item-resolved-summary">
+          Resolved to <strong>{check.resolved_value}</strong>
+          {check.resolved_by ? ` by ${check.resolved_by}` : ""}
+        </p>
+      )}
     </div>
   );
 }
 
-function CheckList({ checks }: { checks: FieldCheck[] }) {
+function CheckList({ checks, onSelect }: { checks: FieldCheck[]; onSelect: (check: FieldCheck) => void }) {
   const issueChecks = checks.filter((c) => c.status !== "match");
   const matchedChecks = checks.filter((c) => c.status === "match");
 
@@ -121,7 +146,7 @@ function CheckList({ checks }: { checks: FieldCheck[] }) {
     return (
       <div className="check-list">
         {matchedChecks.map((c, i) => (
-          <CheckItem key={`${c.field}-${i}`} check={c} />
+          <CheckItem key={`${c.field}-${i}`} check={c} onSelect={onSelect} />
         ))}
       </div>
     );
@@ -130,7 +155,7 @@ function CheckList({ checks }: { checks: FieldCheck[] }) {
   return (
     <div className="check-list">
       {issueChecks.map((c, i) => (
-        <CheckItem key={`${c.field}-${i}`} check={c} />
+        <CheckItem key={`${c.field}-${i}`} check={c} onSelect={onSelect} />
       ))}
       {matchedChecks.length > 0 && (
         <details className="matched-toggle">
@@ -139,7 +164,7 @@ function CheckList({ checks }: { checks: FieldCheck[] }) {
           </summary>
           <div className="check-list check-list--nested">
             {matchedChecks.map((c, i) => (
-              <CheckItem key={`${c.field}-${i}`} check={c} />
+              <CheckItem key={`${c.field}-${i}`} check={c} onSelect={onSelect} />
             ))}
           </div>
         </details>
@@ -152,10 +177,12 @@ function PairSection({
   pairLabel,
   checks,
   forceOpen,
+  onSelect,
 }: {
   pairLabel: string;
   checks: FieldCheck[];
   forceOpen: boolean;
+  onSelect: (check: FieldCheck) => void;
 }) {
   const headerChecks = checks.filter((c) => c.scope === "header");
   const lineItemChecks = checks.filter((c) => c.scope === "line_item");
@@ -175,7 +202,7 @@ function PairSection({
 
       {headerChecks.length > 0 && (
         <CollapsibleGroup title="Header fields" checks={headerChecks} forceOpen={forceOpen}>
-          <CheckList checks={headerChecks} />
+          <CheckList checks={headerChecks} onSelect={onSelect} />
         </CollapsibleGroup>
       )}
 
@@ -188,7 +215,7 @@ function PairSection({
               checks={lineChecks}
               forceOpen={forceOpen}
             >
-              <CheckList checks={lineChecks} />
+              <CheckList checks={lineChecks} onSelect={onSelect} />
             </CollapsibleGroup>
           ))}
         </div>
@@ -197,15 +224,25 @@ function PairSection({
   );
 }
 
-export default function ComparisonView({ report }: { report: ComparisonReport }) {
+export default function ComparisonView({
+  report,
+  shipmentId,
+  onReportChange,
+}: {
+  report: ComparisonReport;
+  shipmentId: string;
+  onReportChange: (report: ComparisonReport) => void;
+}) {
   const [filter, setFilter] = useState<Filter>("all");
+  const [activeCheck, setActiveCheck] = useState<FieldCheck | null>(null);
   const { summary } = report;
 
   const filteredChecks = useMemo(() => {
     if (filter === "all") return report.checks;
     if (filter === "mismatches") return report.checks.filter((c) => c.status === "mismatch");
     if (filter === "matched") return report.checks.filter((c) => c.status === "match");
-    return report.checks.filter((c) => c.status !== "match");
+    if (filter === "resolved") return report.checks.filter((c) => c.status === "resolved");
+    return report.checks.filter((c) => c.status === "mismatch" || c.status === "warning");
   }, [report.checks, filter]);
 
   const pairGroups = groupBy(filteredChecks, (c) => c.pair_label);
@@ -297,6 +334,11 @@ export default function ComparisonView({ report }: { report: ComparisonReport })
             Needs Attention <span className="filter-tab-count">{summary.mismatched + summary.warnings}</span>
           </FlickLabel>
         </button>
+        <button className={filter === "resolved" ? "active" : ""} onClick={selectFilter("resolved")}>
+          <FlickLabel>
+            Resolved <span className="filter-tab-count">{summary.resolved}</span>
+          </FlickLabel>
+        </button>
       </div>
 
       {pairGroups.size === 0 ? (
@@ -305,8 +347,27 @@ export default function ComparisonView({ report }: { report: ComparisonReport })
         </p>
       ) : (
         [...pairGroups.entries()].map(([pairLabel, checks]) => (
-          <PairSection key={pairLabel} pairLabel={pairLabel} checks={checks} forceOpen={forceOpen} />
+          <PairSection
+            key={pairLabel}
+            pairLabel={pairLabel}
+            checks={checks}
+            forceOpen={forceOpen}
+            onSelect={setActiveCheck}
+          />
         ))
+      )}
+
+      {activeCheck && (
+        <ResolutionPanel
+          key={`${activeCheck.pair}:${activeCheck.field}:${activeCheck.line_item_key ?? ""}`}
+          check={activeCheck}
+          shipmentId={shipmentId}
+          onClose={() => setActiveCheck(null)}
+          onResolved={(updated) => {
+            onReportChange(updated);
+            setActiveCheck(null);
+          }}
+        />
       )}
     </div>
   );

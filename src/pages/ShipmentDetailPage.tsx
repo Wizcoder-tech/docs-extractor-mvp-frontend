@@ -226,7 +226,9 @@ export default function ShipmentDetailPage() {
         <p className="alert alert--error">Processing failed. Please check the documents and try again.</p>
       )}
 
-      {comparison && !isReprocessing && <ComparisonView report={comparison} />}
+      {comparison && !isReprocessing && shipmentId && (
+        <ComparisonView report={comparison} shipmentId={shipmentId} onReportChange={setComparison} />
+      )}
     </div>
   );
 }

@@ -2,7 +2,8 @@ export type DocType = "commercial_invoice" | "packing_list" | "bill_of_lading";
 
 export type ProcessingStatus = "pending" | "processing" | "success" | "failed";
 export type ShipmentStatus = "pending" | "processing" | "completed" | "failed";
-export type CheckStatus = "match" | "mismatch" | "warning";
+export type CheckStatus = "match" | "mismatch" | "warning" | "resolved";
+export type ResolutionSource = "doc_a" | "doc_b" | "manual";
 
 export interface DocumentDetail {
   id: string;
@@ -44,6 +45,12 @@ export interface FieldCheck {
   status: CheckStatus;
   detail: string | null;
   safety_critical: boolean;
+
+  resolved_value: string | null;
+  resolution_source: ResolutionSource | null;
+  resolved_by: string | null;
+  resolved_at: string | null;
+  note: string | null;
 }
 
 export interface ComparisonSummary {
@@ -51,6 +58,20 @@ export interface ComparisonSummary {
   matched: number;
   mismatched: number;
   warnings: number;
+  resolved: number;
+}
+
+export interface CheckKey {
+  pair: string;
+  field: string;
+  line_item_key: string | null;
+}
+
+export interface ResolveCheckInput extends CheckKey {
+  resolved_value: string;
+  source: ResolutionSource;
+  resolved_by?: string;
+  note?: string;
 }
 
 export interface ComparisonReport {
