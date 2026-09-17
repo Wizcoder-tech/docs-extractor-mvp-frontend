@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import type { DragEvent } from "react";
+import FlickLabel from "./FlickLabel";
 import Icon from "./Icon";
 
 interface FileDropzoneProps {
@@ -66,7 +67,7 @@ export default function FileDropzone({ label, hint, file, onChange }: FileDropzo
                 if (inputRef.current) inputRef.current.value = "";
               }}
             >
-              Remove
+              <FlickLabel>Remove</FlickLabel>
             </button>
           </div>
         ) : (

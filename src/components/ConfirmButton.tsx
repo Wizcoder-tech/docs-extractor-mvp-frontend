@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import FlickLabel from "./FlickLabel";
 
 interface ConfirmButtonProps {
   onConfirm: () => void | Promise<void>;
@@ -65,10 +66,10 @@ export default function ConfirmButton({
             }
           }}
         >
-          {confirmLabel}
+          <FlickLabel>{confirmLabel}</FlickLabel>
         </button>
         <button type="button" className="btn-link" onClick={disarm}>
-          Cancel
+          <FlickLabel>Cancel</FlickLabel>
         </button>
       </span>
     );
@@ -84,8 +85,10 @@ export default function ConfirmButton({
         timerRef.current = window.setTimeout(disarm, 4000);
       }}
     >
-      {icon}
-      {label}
+      <FlickLabel>
+        {icon}
+        {label}
+      </FlickLabel>
     </button>
   );
 }

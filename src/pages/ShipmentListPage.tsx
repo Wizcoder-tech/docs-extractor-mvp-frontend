@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiRequestError, deleteShipment, listShipments } from "../api/client";
 import ConfirmButton from "../components/ConfirmButton";
+import FlickLabel from "../components/FlickLabel";
 import Icon from "../components/Icon";
 import StatusBadge from "../components/StatusBadge";
 import type { ShipmentListItem } from "../types";
@@ -36,7 +37,9 @@ export default function ShipmentListPage() {
           <p className="page-subtitle">All uploaded shipment document sets and their comparison status.</p>
         </div>
         <Link to="/upload" className="btn btn--primary">
-          <Icon name="plus" /> New Shipment
+          <FlickLabel>
+            <Icon name="plus" /> New Shipment
+          </FlickLabel>
         </Link>
       </div>
 
@@ -83,7 +86,7 @@ export default function ShipmentListPage() {
           <Icon name="file-text" className="empty-state-icon" />
           <p>No shipments uploaded yet.</p>
           <Link to="/upload" className="btn btn--primary">
-            Upload your first document set
+            <FlickLabel>Upload your first document set</FlickLabel>
           </Link>
         </div>
       )}

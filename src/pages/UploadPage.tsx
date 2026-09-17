@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiRequestError, createShipment } from "../api/client";
 import FileDropzone from "../components/FileDropzone";
+import FlickLabel from "../components/FlickLabel";
 import Icon from "../components/Icon";
 
 export default function UploadPage() {
@@ -70,9 +71,9 @@ export default function UploadPage() {
               <span className="spinner" aria-hidden /> Uploading…
             </>
           ) : (
-            <>
+            <FlickLabel>
               <Icon name="upload-cloud" /> Upload &amp; Compare
-            </>
+            </FlickLabel>
           )}
         </button>
       </form>

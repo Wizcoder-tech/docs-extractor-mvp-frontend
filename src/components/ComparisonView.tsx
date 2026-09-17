@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { ComparisonReport, FieldCheck } from "../types";
+import FlickLabel from "./FlickLabel";
 import Icon from "./Icon";
 import StatusBadge from "./StatusBadge";
 
@@ -228,13 +229,19 @@ export default function ComparisonView({ report }: { report: ComparisonReport })
 
       <div className="filter-tabs">
         <button className={filter === "all" ? "active" : ""} onClick={() => setFilter("all")}>
-          All Checks <span className="filter-tab-count">{summary.total_checks}</span>
+          <FlickLabel>
+            All Checks <span className="filter-tab-count">{summary.total_checks}</span>
+          </FlickLabel>
         </button>
         <button className={filter === "issues" ? "active" : ""} onClick={() => setFilter("issues")}>
-          Needs Attention <span className="filter-tab-count">{summary.mismatched + summary.warnings}</span>
+          <FlickLabel>
+            Needs Attention <span className="filter-tab-count">{summary.mismatched + summary.warnings}</span>
+          </FlickLabel>
         </button>
         <button className={filter === "mismatches" ? "active" : ""} onClick={() => setFilter("mismatches")}>
-          Mismatches Only <span className="filter-tab-count">{summary.mismatched}</span>
+          <FlickLabel>
+            Mismatches Only <span className="filter-tab-count">{summary.mismatched}</span>
+          </FlickLabel>
         </button>
       </div>
 

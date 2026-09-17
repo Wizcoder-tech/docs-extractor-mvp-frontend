@@ -10,6 +10,7 @@ import {
 } from "../api/client";
 import ComparisonView from "../components/ComparisonView";
 import ConfirmButton from "../components/ConfirmButton";
+import FlickLabel from "../components/FlickLabel";
 import Icon from "../components/Icon";
 import StatusBadge from "../components/StatusBadge";
 import type { ComparisonReport, DocType, ShipmentDetail } from "../types";
@@ -36,7 +37,7 @@ function ExtractionNote({ note }: { note: string }) {
       <p className="extraction-note-text">{display}</p>
       {isLong && (
         <button type="button" className="extraction-note-toggle" onClick={() => setExpanded((v) => !v)}>
-          {expanded ? "Show less" : "Show more"}
+          <FlickLabel>{expanded ? "Show less" : "Show more"}</FlickLabel>
         </button>
       )}
     </div>
@@ -203,9 +204,9 @@ export default function ShipmentDetailPage() {
                       <span className="spinner" aria-hidden /> Uploading…
                     </>
                   ) : (
-                    <>
+                    <FlickLabel>
                       <Icon name="pencil" /> Replace &amp; reprocess
-                    </>
+                    </FlickLabel>
                   )}
                 </button>
               </div>
