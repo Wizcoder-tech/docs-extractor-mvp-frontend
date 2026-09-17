@@ -121,11 +121,13 @@ export default function ShipmentListPage() {
                   <td className="shipment-table-actions" onClick={(e) => e.stopPropagation()}>
                     <ConfirmButton
                       label="Delete"
-                      confirmLabel="Confirm"
+                      confirmLabel="Delete shipment"
                       busyLabel="Deleting…"
                       className="btn btn--ghost-danger btn--sm"
                       title="Delete this shipment and its documents"
                       icon={<Icon name="trash" />}
+                      confirmTitle={`Delete ${s.reference ?? `shipment ${s.id.slice(0, 8)}`}?`}
+                      confirmMessage="This will permanently delete this shipment and its documents. This can't be undone."
                       onConfirm={() => handleDelete(s.id)}
                     />
                   </td>
