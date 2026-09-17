@@ -146,13 +146,11 @@ export default function ShipmentDetailPage() {
           <StatusBadge status={shipment.status} />
           <ConfirmButton
             label="Delete shipment"
-            confirmLabel="Delete shipment"
+            confirmLabel="Confirm delete"
             busyLabel="Deleting…"
             className="btn btn--ghost-danger btn--sm"
             title="Delete this shipment, its documents, and its comparison history"
             icon={<Icon name="trash" />}
-            confirmTitle={`Delete ${shipment.reference ?? `shipment ${shipment.id.slice(0, 8)}`}?`}
-            confirmMessage="This will permanently delete this shipment, its documents, and its comparison history. This can't be undone."
             onConfirm={handleDeleteShipment}
           />
         </div>
