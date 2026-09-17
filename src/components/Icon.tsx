@@ -12,7 +12,8 @@ export type IconName =
   | "file-check"
   | "trash"
   | "plus"
-  | "chevron-right";
+  | "chevron-right"
+  | "panel-left";
 
 const PATHS: Record<IconName, ReactNode> = {
   check: <path d="M20 6 9 17l-5-5" />,
@@ -62,6 +63,12 @@ const PATHS: Record<IconName, ReactNode> = {
   ),
   plus: <path d="M12 5v14M5 12h14" />,
   "chevron-right": <path d="M9 6l6 6-6 6" />,
+  "panel-left": (
+    <>
+      <rect x={3} y={4} width={18} height={16} rx={2} />
+      <path d="M9 4v16" />
+    </>
+  ),
 };
 
 interface IconProps extends Omit<SVGProps<SVGSVGElement>, "name"> {

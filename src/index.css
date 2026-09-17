@@ -130,7 +130,16 @@ h4 {
   background: var(--color-surface);
   border-right: 1px solid var(--color-border);
   padding: 1.2rem 0.8rem;
-  overflow-y: auto;
+  overflow-y: visible;
+  transition: width var(--transition);
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding-bottom: 0.2rem;
 }
 
 .sidebar-brand {
@@ -142,15 +151,43 @@ h4 {
   font-size: var(--text-md);
   letter-spacing: -0.01em;
   color: var(--color-text);
+  min-width: 0;
 }
 .sidebar-brand:hover {
   color: var(--color-text);
+}
+.sidebar-brand-text {
+  overflow: hidden;
+  white-space: nowrap;
 }
 .logomark {
   display: block;
   flex-shrink: 0;
   height: 1.4rem;
   width: auto;
+}
+
+.sidebar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  margin-bottom: 1rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+  cursor: pointer;
+  transition:
+    background var(--transition),
+    color var(--transition);
+}
+.sidebar-toggle:hover {
+  background: var(--color-neutral-bg);
+  color: var(--color-text);
 }
 
 .sidebar-nav {
@@ -160,6 +197,7 @@ h4 {
 }
 
 .sidebar-link {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.65rem;
@@ -176,6 +214,10 @@ h4 {
   font-size: var(--text-md);
   flex-shrink: 0;
 }
+.sidebar-link-text {
+  overflow: hidden;
+  white-space: nowrap;
+}
 .sidebar-link:hover {
   background: var(--color-neutral-bg);
   color: var(--color-text);
@@ -183,6 +225,64 @@ h4 {
 .sidebar-link--active {
   background: var(--color-accent-soft);
   color: var(--color-accent);
+}
+
+/* Collapsed sidebar: icon rail with hover tooltips */
+
+.sidebar--collapsed {
+  width: 72px;
+  overflow: visible;
+}
+.sidebar--collapsed .sidebar-header {
+  flex-direction: column-reverse;
+  justify-content: flex-start;
+}
+.sidebar--collapsed .sidebar-brand {
+  justify-content: center;
+  padding: 0.3rem 0 0.6rem;
+}
+.sidebar--collapsed .sidebar-brand-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+.sidebar--collapsed .sidebar-toggle {
+  margin-bottom: 0.4rem;
+}
+.sidebar--collapsed .sidebar-link {
+  justify-content: center;
+  padding: 0.6rem;
+}
+.sidebar--collapsed .sidebar-link-text {
+  position: absolute;
+  left: calc(100% + 0.75rem);
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  background: var(--color-text);
+  color: var(--color-surface);
+  padding: 0.4rem 0.7rem;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 20;
+  transition:
+    opacity var(--transition),
+    transform var(--transition),
+    visibility var(--transition);
+}
+.sidebar--collapsed .sidebar-link:hover .sidebar-link-text,
+.sidebar--collapsed .sidebar-link:focus-visible .sidebar-link-text {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
 }
 
 .app-main {
@@ -1233,6 +1333,20 @@ details[open] > .check-group-summary .check-group-chevron {
     padding: 0.45rem 0.65rem;
     font-size: var(--text-sm);
     white-space: nowrap;
+  }
+  .sidebar-toggle {
+    display: none;
+  }
+  .sidebar--collapsed .sidebar-brand-text,
+  .sidebar--collapsed .sidebar-link-text {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+  }
+  .sidebar--collapsed .sidebar-link {
+    justify-content: flex-start;
   }
   .page-header--row {
     flex-direction: column;
