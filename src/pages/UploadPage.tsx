@@ -8,7 +8,6 @@ import Icon from "../components/Icon";
 
 export default function UploadPage() {
   const navigate = useNavigate();
-  const [customerName, setCustomerName] = useState("");
   const [invoice, setInvoice] = useState<File | null>(null);
   const [packingList, setPackingList] = useState<File | null>(null);
   const [billOfLading, setBillOfLading] = useState<File | null>(null);
@@ -16,6 +15,9 @@ export default function UploadPage() {
   const [error, setError] = useState<string | null>(null);
 
   const canSubmit = invoice && packingList && billOfLading && !submitting;
+  const uploadedCount = [invoice, packingList, billOfLading].filter(
+    Boolean,
+  ).length;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -24,14 +26,17 @@ export default function UploadPage() {
     setError(null);
     try {
       const shipment = await createShipment({
-        customerName: customerName || undefined,
         invoice,
         packingList,
         billOfLading,
       });
       navigate(`/shipments/${shipment.id}`);
     } catch (err) {
-      setError(err instanceof ApiRequestError ? err.message : "Upload failed. Please try again.");
+      setError(
+        err instanceof ApiRequestError
+          ? err.message
+          : "Upload failed. Please try again.",
+      );
       setSubmitting(false);
     }
   };
@@ -41,31 +46,50 @@ export default function UploadPage() {
       <div className="page-header">
         <h1>Upload Shipment Documents</h1>
         <p className="page-subtitle">
-          Upload the Commercial Invoice, Packing List, and Bill of Lading for a single shipment. We'll extract the
-          data and flag any mismatches between them.
+          Upload the Commercial Invoice, Packing List, and Bill of Lading for a
+          single shipment. We'll extract the data and flag any mismatches
+          between them.
         </p>
       </div>
 
       <form className="upload-form" onSubmit={handleSubmit}>
-        <label className="text-field">
-          <span>Customer / Buyer name (optional)</span>
-          <input
-            type="text"
-            placeholder="e.g. C.W. Mackie PLC"
-            value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
-          />
-        </label>
-
         <div className="dropzone-grid">
-          <FileDropzone label="Commercial Invoice" file={invoice} onChange={setInvoice} />
-          <FileDropzone label="Packing List" file={packingList} onChange={setPackingList} />
-          <FileDropzone label="Bill of Lading" file={billOfLading} onChange={setBillOfLading} />
+          <FileDropzone
+            label="Commercial Invoice"
+            file={invoice}
+            onChange={setInvoice}
+          />
+          <FileDropzone
+            label="Packing List"
+            file={packingList}
+            onChange={setPackingList}
+          />
+          <FileDropzone
+            label="Bill of Lading"
+            file={billOfLading}
+            onChange={setBillOfLading}
+          />
+        </div>
+
+        <div className="upload-progress" role="status">
+          <div className="upload-progress-track">
+            <div
+              className="upload-progress-fill"
+              style={{ width: `${(uploadedCount / 3) * 100}%` }}
+            />
+          </div>
+          <span className="upload-progress-label">
+            {uploadedCount} of 3 documents ready
+          </span>
         </div>
 
         {error && <div className="alert alert--error">{error}</div>}
 
-        <button type="submit" className="btn btn--primary btn--block" disabled={!canSubmit}>
+        <button
+          type="submit"
+          className="btn btn--primary btn--block"
+          disabled={!canSubmit}
+        >
           {submitting ? (
             <>
               <span className="spinner" aria-hidden /> Uploading…
@@ -77,6 +101,46 @@ export default function UploadPage() {
           )}
         </button>
       </form>
+
+      <div className="how-it-works">
+        <div className="how-it-works-step">
+          <span className="how-it-works-icon">
+            <Icon name="upload-cloud" />
+          </span>
+          <div>
+            <h4>1. Upload</h4>
+            <p>
+              Drop in the invoice, packing list, and bill of lading for one
+              shipment.
+            </p>
+          </div>
+        </div>
+        <Icon name="chevron-right" className="how-it-works-arrow" />
+        <div className="how-it-works-step">
+          <span className="how-it-works-icon">
+            <Icon name="bolt" />
+          </span>
+          <div>
+            <h4>2. Extract</h4>
+            <p>
+              We read every field from each PDF automatically, no manual entry.
+            </p>
+          </div>
+        </div>
+        <Icon name="chevron-right" className="how-it-works-arrow" />
+        <div className="how-it-works-step">
+          <span className="how-it-works-icon">
+            <Icon name="file-check" />
+          </span>
+          <div>
+            <h4>3. Compare</h4>
+            <p>
+              Mismatches between documents are flagged instantly on the shipment
+              page.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -13,7 +13,8 @@ export type IconName =
   | "trash"
   | "plus"
   | "chevron-right"
-  | "panel-left";
+  | "panel-left"
+  | "search";
 
 const PATHS: Record<IconName, ReactNode> = {
   check: <path d="M20 6 9 17l-5-5" />,
@@ -67,6 +68,12 @@ const PATHS: Record<IconName, ReactNode> = {
     <>
       <rect x={3} y={4} width={18} height={16} rx={2} />
       <path d="M9 4v16" />
+    </>
+  ),
+  search: (
+    <>
+      <circle cx={11} cy={11} r={7} />
+      <path d="m21 21-4.35-4.35" />
     </>
   ),
 };

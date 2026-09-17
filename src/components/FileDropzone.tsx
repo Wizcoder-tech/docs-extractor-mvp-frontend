@@ -56,6 +56,9 @@ export default function FileDropzone({ label, hint, file, onChange }: FileDropzo
         />
         {file ? (
           <div className="dropzone-file">
+            <span className="dropzone-badge dropzone-badge--success">
+              <Icon name="check" />
+            </span>
             <span className="dropzone-file-name">{file.name}</span>
             <span className="dropzone-file-size">{formatBytes(file.size)}</span>
             <button
@@ -72,8 +75,10 @@ export default function FileDropzone({ label, hint, file, onChange }: FileDropzo
           </div>
         ) : (
           <>
-            <Icon name="upload-cloud" className="dropzone-icon" />
-            <span>Drop PDF here or click to browse</span>
+            <span className="dropzone-badge">
+              <Icon name="upload-cloud" className="dropzone-icon" />
+            </span>
+            <span className="dropzone-copy">Drop PDF here or click to browse</span>
             {hint && <span className="dropzone-hint">{hint}</span>}
           </>
         )}

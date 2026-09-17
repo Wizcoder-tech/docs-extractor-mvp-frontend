@@ -11,7 +11,7 @@ const DOC_LABELS: Record<string, string> = {
   shipment_date: "Shipment Date",
 };
 
-type Filter = "all" | "issues" | "mismatches";
+type Filter = "all" | "issues" | "mismatches" | "matched";
 
 function groupBy<T>(items: T[], keyFn: (item: T) => string): Map<string, T[]> {
   const map = new Map<string, T[]>();
@@ -57,15 +57,17 @@ function CollapsibleGroup({
   title,
   checks,
   children,
+  forceOpen = false,
 }: {
   title: string;
   checks: FieldCheck[];
   children: React.ReactNode;
+  forceOpen?: boolean;
 }) {
   const { mismatched, warnings } = statusCounts(checks);
   const hasIssue = mismatched > 0 || warnings > 0;
   return (
-    <details className="check-group" open={hasIssue}>
+    <details className="check-group" open={hasIssue || forceOpen}>
       <summary className="check-group-summary">
         <span className="check-group-summary-left">
           <Icon name="chevron-right" className="check-group-chevron" />
@@ -146,7 +148,15 @@ function CheckList({ checks }: { checks: FieldCheck[] }) {
   );
 }
 
-function PairSection({ pairLabel, checks }: { pairLabel: string; checks: FieldCheck[] }) {
+function PairSection({
+  pairLabel,
+  checks,
+  forceOpen,
+}: {
+  pairLabel: string;
+  checks: FieldCheck[];
+  forceOpen: boolean;
+}) {
   const headerChecks = checks.filter((c) => c.scope === "header");
   const lineItemChecks = checks.filter((c) => c.scope === "line_item");
   const lineItemGroups = groupBy(lineItemChecks, (c) => c.line_item_key ?? "");
@@ -164,7 +174,7 @@ function PairSection({ pairLabel, checks }: { pairLabel: string; checks: FieldCh
       </div>
 
       {headerChecks.length > 0 && (
-        <CollapsibleGroup title="Header fields" checks={headerChecks}>
+        <CollapsibleGroup title="Header fields" checks={headerChecks} forceOpen={forceOpen}>
           <CheckList checks={headerChecks} />
         </CollapsibleGroup>
       )}
@@ -172,7 +182,12 @@ function PairSection({ pairLabel, checks }: { pairLabel: string; checks: FieldCh
       {lineItemGroups.size > 0 && (
         <div className="line-item-groups">
           {[...lineItemGroups.entries()].map(([lineKey, lineChecks]) => (
-            <CollapsibleGroup key={lineKey} title={`Line item ${lineKey || "(unidentified)"}`} checks={lineChecks}>
+            <CollapsibleGroup
+              key={lineKey}
+              title={`Line item ${lineKey || "(unidentified)"}`}
+              checks={lineChecks}
+              forceOpen={forceOpen}
+            >
               <CheckList checks={lineChecks} />
             </CollapsibleGroup>
           ))}
@@ -189,36 +204,70 @@ export default function ComparisonView({ report }: { report: ComparisonReport })
   const filteredChecks = useMemo(() => {
     if (filter === "all") return report.checks;
     if (filter === "mismatches") return report.checks.filter((c) => c.status === "mismatch");
+    if (filter === "matched") return report.checks.filter((c) => c.status === "match");
     return report.checks.filter((c) => c.status !== "match");
   }, [report.checks, filter]);
 
   const pairGroups = groupBy(filteredChecks, (c) => c.pair_label);
+  const forceOpen = filter !== "all";
+
+  const selectFilter = (value: Filter) => () => setFilter(value);
+  const handleCardKeyDown = (value: Filter) => (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setFilter(value);
+    }
+  };
 
   return (
     <div className="comparison-view">
       <div className="summary-cards">
-        <div className="summary-card summary-card--total">
+        <div
+          className={`summary-card summary-card--total${filter === "all" ? " summary-card--active" : ""}`}
+          role="button"
+          tabIndex={0}
+          onClick={selectFilter("all")}
+          onKeyDown={handleCardKeyDown("all")}
+        >
           <span className="summary-icon" aria-hidden>
             Σ
           </span>
           <span className="summary-value">{summary.total_checks}</span>
           <span className="summary-label">Total Checks</span>
         </div>
-        <div className="summary-card summary-card--match">
+        <div
+          className={`summary-card summary-card--match${filter === "matched" ? " summary-card--active" : ""}`}
+          role="button"
+          tabIndex={0}
+          onClick={selectFilter("matched")}
+          onKeyDown={handleCardKeyDown("matched")}
+        >
           <span className="summary-icon" aria-hidden>
             <Icon name="check" size="1.1rem" />
           </span>
           <span className="summary-value">{summary.matched}</span>
           <span className="summary-label">Matched</span>
         </div>
-        <div className="summary-card summary-card--mismatch">
+        <div
+          className={`summary-card summary-card--mismatch${filter === "mismatches" ? " summary-card--active" : ""}`}
+          role="button"
+          tabIndex={0}
+          onClick={selectFilter("mismatches")}
+          onKeyDown={handleCardKeyDown("mismatches")}
+        >
           <span className="summary-icon" aria-hidden>
             <Icon name="x" size="1.1rem" />
           </span>
           <span className="summary-value">{summary.mismatched}</span>
           <span className="summary-label">Mismatches</span>
         </div>
-        <div className="summary-card summary-card--warning">
+        <div
+          className={`summary-card summary-card--warning${filter === "issues" ? " summary-card--active" : ""}`}
+          role="button"
+          tabIndex={0}
+          onClick={selectFilter("issues")}
+          onKeyDown={handleCardKeyDown("issues")}
+        >
           <span className="summary-icon" aria-hidden>
             <Icon name="alert-triangle" size="1.1rem" />
           </span>
@@ -228,19 +277,24 @@ export default function ComparisonView({ report }: { report: ComparisonReport })
       </div>
 
       <div className="filter-tabs">
-        <button className={filter === "all" ? "active" : ""} onClick={() => setFilter("all")}>
+        <button className={filter === "all" ? "active" : ""} onClick={selectFilter("all")}>
           <FlickLabel>
             All Checks <span className="filter-tab-count">{summary.total_checks}</span>
           </FlickLabel>
         </button>
-        <button className={filter === "issues" ? "active" : ""} onClick={() => setFilter("issues")}>
+        <button className={filter === "matched" ? "active" : ""} onClick={selectFilter("matched")}>
           <FlickLabel>
-            Needs Attention <span className="filter-tab-count">{summary.mismatched + summary.warnings}</span>
+            Matched Only <span className="filter-tab-count">{summary.matched}</span>
           </FlickLabel>
         </button>
-        <button className={filter === "mismatches" ? "active" : ""} onClick={() => setFilter("mismatches")}>
+        <button className={filter === "mismatches" ? "active" : ""} onClick={selectFilter("mismatches")}>
           <FlickLabel>
             Mismatches Only <span className="filter-tab-count">{summary.mismatched}</span>
+          </FlickLabel>
+        </button>
+        <button className={filter === "issues" ? "active" : ""} onClick={selectFilter("issues")}>
+          <FlickLabel>
+            Needs Attention <span className="filter-tab-count">{summary.mismatched + summary.warnings}</span>
           </FlickLabel>
         </button>
       </div>
@@ -251,7 +305,7 @@ export default function ComparisonView({ report }: { report: ComparisonReport })
         </p>
       ) : (
         [...pairGroups.entries()].map(([pairLabel, checks]) => (
-          <PairSection key={pairLabel} pairLabel={pairLabel} checks={checks} />
+          <PairSection key={pairLabel} pairLabel={pairLabel} checks={checks} forceOpen={forceOpen} />
         ))
       )}
     </div>
