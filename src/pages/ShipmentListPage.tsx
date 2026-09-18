@@ -227,11 +227,13 @@ export default function ShipmentListPage() {
                   <td className="shipment-table-actions" onClick={(e) => e.stopPropagation()}>
                     <ConfirmButton
                       label="Delete"
-                      confirmLabel="Confirm"
+                      confirmLabel="Delete"
                       busyLabel="Deleting…"
-                      className="btn btn--ghost-danger btn--sm"
+                      className="btn btn--ghost-danger btn--sm p-20"
                       title="Delete this shipment and its documents"
                       icon={<Icon name="trash" />}
+                      dialogTitle="Delete shipment"
+                      dialogMessage={`Are you sure you want to delete shipment "${s.reference ?? s.id.slice(0, 8)}"? This will delete all its uploaded documents and comparison results.`}
                       onConfirm={() => handleDelete(s.id)}
                     />
                   </td>

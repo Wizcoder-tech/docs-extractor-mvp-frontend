@@ -28,7 +28,9 @@ export default function ResolutionPanel({ check, shipmentId, onClose, onResolved
   const [source, setSource] = useState<ResolutionSource>(
     check.resolution_source ?? (hasBothValues ? "doc_a" : "manual"),
   );
-  const [manualValue, setManualValue] = useState(check.resolved_value ?? "");
+  const [manualValue, setManualValue] = useState(
+    check.resolved_value ?? (check.status === "match" ? (check.doc_a_value ?? check.doc_b_value ?? "") : ""),
+  );
   const [resolvedBy, setResolvedBy] = useState(
     () => check.resolved_by ?? localStorage.getItem(RESOLVER_NAME_KEY) ?? "",
   );

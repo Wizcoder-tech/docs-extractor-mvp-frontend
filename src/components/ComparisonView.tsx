@@ -5,8 +5,6 @@ import Icon from "./Icon";
 import ResolutionPanel from "./ResolutionPanel";
 import StatusBadge from "./StatusBadge";
 
-const CLICKABLE_STATUSES = new Set(["mismatch", "warning", "resolved"]);
-
 const DOC_LABELS: Record<string, string> = {
   commercial_invoice: "Invoice",
   packing_list: "Packing List",
@@ -100,7 +98,7 @@ function CheckItem({
     check.safety_critical &&
     check.status !== "match" &&
     check.status !== "resolved";
-  const isClickable = !!onSelect && CLICKABLE_STATUSES.has(check.status);
+  const isClickable = !!onSelect;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!isClickable) return;
@@ -272,6 +270,314 @@ function PairSection({
   );
 }
 
+function downloadFile(content: string, filename: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function escapeCsvCell(val: string | null | undefined): string {
+  if (val == null) return '""';
+  const str = String(val);
+  return `"${str.replace(/"/g, '""')}"`;
+}
+
+function PreviewModal({
+  checks,
+  shipmentId,
+  onClose,
+  onUpdateValue,
+}: {
+  checks: FieldCheck[];
+  shipmentId: string;
+  onClose: () => void;
+  onUpdateValue: (targetIndex: number, newValue: string) => void;
+}) {
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filtered = useMemo(() => {
+    const listWithIndex = checks.map((c, originalIndex) => ({ check: c, originalIndex }));
+    if (!searchTerm.trim()) return listWithIndex;
+    const lower = searchTerm.toLowerCase();
+    return listWithIndex.filter(
+      ({ check: c }) =>
+        c.field_label.toLowerCase().includes(lower) ||
+        c.field.toLowerCase().includes(lower) ||
+        c.pair_label.toLowerCase().includes(lower) ||
+        (c.resolved_value ?? "").toLowerCase().includes(lower) ||
+        (c.doc_a_value ?? "").toLowerCase().includes(lower) ||
+        (c.doc_b_value ?? "").toLowerCase().includes(lower),
+    );
+  }, [checks, searchTerm]);
+
+  const handleExportCSV = () => {
+    const headers = [
+      "Document Pair",
+      "Field Label",
+      "Field Key",
+      "Scope",
+      "Line Item Key",
+      "Status",
+      "Doc A Type",
+      "Doc A Value",
+      "Doc B Type",
+      "Doc B Value",
+      "Resolved Value",
+      "Resolved By",
+      "Note",
+    ];
+
+    const rows = checks.map((c) => {
+      const resolvedVal =
+        c.resolved_value ?? (c.status === "match" ? (c.doc_a_value ?? c.doc_b_value ?? "") : "");
+      return [
+        escapeCsvCell(c.pair_label),
+        escapeCsvCell(c.field_label),
+        escapeCsvCell(c.field),
+        escapeCsvCell(c.scope),
+        escapeCsvCell(c.line_item_key ?? ""),
+        escapeCsvCell(c.status),
+        escapeCsvCell(DOC_LABELS[c.doc_a_type] ?? c.doc_a_type),
+        escapeCsvCell(c.doc_a_value ?? ""),
+        escapeCsvCell(DOC_LABELS[c.doc_b_type] ?? c.doc_b_type),
+        escapeCsvCell(c.doc_b_value ?? ""),
+        escapeCsvCell(resolvedVal),
+        escapeCsvCell(c.resolved_by ?? ""),
+        escapeCsvCell(c.note ?? ""),
+      ].join(",");
+    });
+
+    const csvContent = [headers.join(","), ...rows].join("\r\n");
+    downloadFile(csvContent, `shipment-${shipmentId.slice(0, 8)}-preview.csv`, "text/csv;charset=utf-8;");
+  };
+
+  const handleExportJSON = () => {
+    const data = checks.map((c) => ({
+      pair: c.pair,
+      pair_label: c.pair_label,
+      field: c.field,
+      field_label: c.field_label,
+      scope: c.scope,
+      line_item_key: c.line_item_key,
+      status: c.status,
+      doc_a_type: c.doc_a_type,
+      doc_a_value: c.doc_a_value,
+      doc_b_type: c.doc_b_type,
+      doc_b_value: c.doc_b_value,
+      resolved_value:
+        c.resolved_value ?? (c.status === "match" ? (c.doc_a_value ?? c.doc_b_value ?? "") : null),
+      resolved_by: c.resolved_by,
+      note: c.note,
+    }));
+
+    const jsonContent = JSON.stringify(data, null, 2);
+    downloadFile(jsonContent, `shipment-${shipmentId.slice(0, 8)}-preview.json`, "application/json");
+  };
+
+  const handleExportExcel = () => {
+    let tableHtml = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Comparison Report</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><meta charset="utf-8"></head>
+      <body>
+        <table border="1">
+          <thead>
+            <tr style="background-color: #4f46e5; color: #ffffff; font-weight: bold;">
+              <th>Document Pair</th>
+              <th>Field Label</th>
+              <th>Field Key</th>
+              <th>Scope</th>
+              <th>Line Item</th>
+              <th>Status</th>
+              <th>Doc A Type</th>
+              <th>Doc A Value</th>
+              <th>Doc B Type</th>
+              <th>Doc B Value</th>
+              <th>Final Resolved Value</th>
+              <th>Resolved By</th>
+              <th>Note</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    for (const c of checks) {
+      const resolvedVal =
+        c.resolved_value ?? (c.status === "match" ? (c.doc_a_value ?? c.doc_b_value ?? "") : "");
+      tableHtml += `
+        <tr>
+          <td>${c.pair_label}</td>
+          <td>${c.field_label}</td>
+          <td>${c.field}</td>
+          <td>${c.scope}</td>
+          <td>${c.line_item_key ?? ""}</td>
+          <td>${c.status}</td>
+          <td>${DOC_LABELS[c.doc_a_type] ?? c.doc_a_type}</td>
+          <td>${c.doc_a_value ?? ""}</td>
+          <td>${DOC_LABELS[c.doc_b_type] ?? c.doc_b_type}</td>
+          <td>${c.doc_b_value ?? ""}</td>
+          <td>${resolvedVal}</td>
+          <td>${c.resolved_by ?? ""}</td>
+          <td>${c.note ?? ""}</td>
+        </tr>
+      `;
+    }
+
+    tableHtml += `
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    downloadFile(tableHtml, `shipment-${shipmentId.slice(0, 8)}-preview.xls`, "application/vnd.ms-excel;charset=utf-8");
+  };
+
+  return (
+    <div className="preview-modal-backdrop" onClick={onClose}>
+      <div
+        className="preview-modal"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="preview-modal-header">
+          <h3 className="preview-modal-title">
+            <Icon name="file-check" size="1.25rem" />
+            Comparison &amp; Extraction Preview
+          </h3>
+          <button
+            type="button"
+            className="preview-modal-close"
+            onClick={onClose}
+            aria-label="Close modal"
+          >
+            <Icon name="x" />
+          </button>
+        </div>
+
+        <div className="preview-modal-toolbar">
+          <input
+            type="search"
+            className="preview-search-input"
+            placeholder="Search fields or values…"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <div className="preview-export-group">
+            <button
+              type="button"
+              className="btn--export btn--export-excel"
+              onClick={handleExportExcel}
+              title="Export as Excel format"
+            >
+              <Icon name="download" /> Export Excel
+            </button>
+            <button
+              type="button"
+              className="btn--export btn--export-csv"
+              onClick={handleExportCSV}
+              title="Export as CSV spreadsheet"
+            >
+              <Icon name="download" /> Export CSV
+            </button>
+            <button
+              type="button"
+              className="btn--export btn--export-json"
+              onClick={handleExportJSON}
+              title="Export as JSON data"
+            >
+              <Icon name="download" /> Export JSON
+            </button>
+          </div>
+        </div>
+
+        <div className="preview-modal-body">
+          <table className="preview-table">
+            <thead>
+              <tr>
+                <th>Document Pair</th>
+                <th>Field</th>
+                <th>Status</th>
+                <th>Document A</th>
+                <th>Document B</th>
+                <th style={{ minWidth: "220px" }}>Value (Editable)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(({ check: c, originalIndex }) => {
+                const val =
+                  c.resolved_value != null
+                    ? c.resolved_value
+                    : c.status === "match"
+                      ? (c.doc_a_value ?? c.doc_b_value ?? "")
+                      : "";
+
+                return (
+                  <tr key={`check-${originalIndex}`}>
+                    <td>
+                      <strong>{c.pair_label}</strong>
+                      {c.line_item_key && (
+                        <div style={{ fontSize: "11px", color: "var(--color-text-muted)" }}>
+                          Line Item: {c.line_item_key}
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      <div>{c.field_label}</div>
+                      <div style={{ fontSize: "11px", color: "var(--color-text-faint)" }}>
+                        {c.field}
+                      </div>
+                    </td>
+                    <td>
+                      <StatusBadge status={c.status} />
+                    </td>
+                    <td>
+                      <div style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-text-muted)" }}>
+                        {DOC_LABELS[c.doc_a_type] ?? c.doc_a_type}
+                      </div>
+                      <div>{c.doc_a_value ?? <em className="muted">missing</em>}</div>
+                    </td>
+                    <td>
+                      <div style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-text-muted)" }}>
+                        {DOC_LABELS[c.doc_b_type] ?? c.doc_b_type}
+                      </div>
+                      <div>{c.doc_b_value ?? <em className="muted">missing</em>}</div>
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        className={`preview-table-input${c.resolved_value != null ? " preview-table-input--modified" : ""}`}
+                        value={val}
+                        placeholder={c.status === "match" ? (c.doc_a_value ?? "") : "Enter value…"}
+                        onChange={(e) => onUpdateValue(originalIndex, e.target.value)}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="preview-modal-footer">
+          <span>
+            Showing {filtered.length} of {checks.length} field checks
+          </span>
+          <button type="button" className="btn btn--primary btn--sm" onClick={onClose}>
+            <FlickLabel>Done</FlickLabel>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ComparisonView({
   report,
   shipmentId,
@@ -283,6 +589,7 @@ export default function ComparisonView({
 }) {
   const [filter, setFilter] = useState<Filter>("all");
   const [activeCheck, setActiveCheck] = useState<FieldCheck | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
   const { summary } = report;
 
   const filteredChecks = useMemo(() => {
@@ -416,6 +723,19 @@ export default function ComparisonView({
         </button>
       </div>
 
+      <div className="comparison-header-actions">
+        <button
+          type="button"
+          className="btn btn--ghost btn--sm"
+          onClick={() => setShowPreview(true)}
+          title="Preview all extracted fields and export as Excel, CSV, or JSON"
+        >
+          <FlickLabel>
+            <Icon name="eye" /> Preview &amp; Export
+          </FlickLabel>
+        </button>
+      </div>
+
       {pairGroups.size === 0 ? (
         <p className="empty-state">
           {filter === "all"
@@ -434,9 +754,33 @@ export default function ComparisonView({
         ))
       )}
 
+      {showPreview && (
+        <PreviewModal
+          checks={report.checks}
+          shipmentId={shipmentId}
+          onClose={() => setShowPreview(false)}
+          onUpdateValue={(targetIndex, newValue) => {
+            const updatedChecks = report.checks.map((c, idx) => {
+              if (idx === targetIndex) {
+                return {
+                  ...c,
+                  resolved_value: newValue,
+                  status: (c.status === "match" ? "match" : "resolved") as FieldCheck["status"],
+                };
+              }
+              return c;
+            });
+            onReportChange({
+              ...report,
+              checks: updatedChecks,
+            });
+          }}
+        />
+      )}
+
       {activeCheck && (
         <ResolutionPanel
-          key={`${activeCheck.pair}:${activeCheck.field}:${activeCheck.line_item_key ?? ""}`}
+          key={`${activeCheck.pair}:${activeCheck.field}:${activeCheck.line_item_key ?? ""}:${activeCheck.doc_a_value ?? ""}:${activeCheck.doc_b_value ?? ""}`}
           check={activeCheck}
           shipmentId={shipmentId}
           onClose={() => setActiveCheck(null)}
