@@ -326,30 +326,57 @@ function PreviewModal({
     );
   }, [checks, searchTerm]);
 
-  const getFieldAndValue = (c: FieldCheck) => {
-    const field = c.line_item_key ? `${c.field_label} (${c.line_item_key})` : c.field_label;
+  const getKeyAndValue = (c: FieldCheck) => {
+    const key = c.line_item_key ? `${c.field_label} (${c.line_item_key})` : c.field_label;
     const value =
       c.resolved_value != null
         ? c.resolved_value
         : c.status === "match"
           ? (c.doc_a_value ?? c.doc_b_value ?? "")
           : "";
-    return { field, value };
+    return { key, value };
+  };
+
+  const getExportEntries = () => {
+    const entries: { key: string; value: string }[] = [];
+    const seen = new Set<string>();
+
+    for (const c of checks) {
+      const { key, value } = getKeyAndValue(c);
+      const signature = `${key}:::${value}`;
+      if (!seen.has(signature)) {
+        seen.add(signature);
+        entries.push({ key, value });
+      }
+    }
+    return entries;
   };
 
   const handleExportCSV = () => {
-    const headers = ["Field", "Value"];
-    const rows = checks.map((c) => {
-      const { field, value } = getFieldAndValue(c);
-      return [escapeCsvCell(field), escapeCsvCell(value)].join(",");
-    });
+    const headers = ["Key", "Value"];
+    const rows = getExportEntries().map(({ key, value }) =>
+      [escapeCsvCell(key), escapeCsvCell(value)].join(",")
+    );
 
     const csvContent = [headers.join(","), ...rows].join("\r\n");
     downloadFile(csvContent, `shipment-${shipmentId.slice(0, 8)}-preview.csv`, "text/csv;charset=utf-8;");
   };
 
   const handleExportJSON = () => {
-    const data = checks.map((c) => getFieldAndValue(c));
+    const data: Record<string, string> = {};
+
+    for (const { key: baseKey, value } of getExportEntries()) {
+      if (data[baseKey] === undefined) {
+        data[baseKey] = value;
+      } else {
+        let suffix = 2;
+        while (data[`${baseKey} (${suffix})`] !== undefined) {
+          suffix++;
+        }
+        data[`${baseKey} (${suffix})`] = value;
+      }
+    }
+
     const jsonContent = JSON.stringify(data, null, 2);
     downloadFile(jsonContent, `shipment-${shipmentId.slice(0, 8)}-preview.json`, "application/json");
   };
@@ -362,18 +389,17 @@ function PreviewModal({
         <table border="1">
           <thead>
             <tr style="background-color: #4f46e5; color: #ffffff; font-weight: bold;">
-              <th>Field</th>
+              <th>Key</th>
               <th>Value</th>
             </tr>
           </thead>
           <tbody>
     `;
 
-    for (const c of checks) {
-      const { field, value } = getFieldAndValue(c);
+    for (const { key, value } of getExportEntries()) {
       tableHtml += `
         <tr>
-          <td>${escapeHtml(field)}</td>
+          <td>${escapeHtml(key)}</td>
           <td>${escapeHtml(value)}</td>
         </tr>
       `;
