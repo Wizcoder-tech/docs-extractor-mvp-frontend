@@ -288,6 +288,16 @@ function escapeCsvCell(val: string | null | undefined): string {
   return `"${str.replace(/"/g, '""')}"`;
 }
 
+function escapeHtml(val: string | null | undefined): string {
+  if (val == null) return "";
+  return String(val)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function PreviewModal({
   checks,
   shipmentId,
@@ -316,41 +326,22 @@ function PreviewModal({
     );
   }, [checks, searchTerm]);
 
-  const handleExportCSV = () => {
-    const headers = [
-      "Document Pair",
-      "Field Label",
-      "Field Key",
-      "Scope",
-      "Line Item Key",
-      "Status",
-      "Doc A Type",
-      "Doc A Value",
-      "Doc B Type",
-      "Doc B Value",
-      "Resolved Value",
-      "Resolved By",
-      "Note",
-    ];
+  const getFieldAndValue = (c: FieldCheck) => {
+    const field = c.line_item_key ? `${c.field_label} (${c.line_item_key})` : c.field_label;
+    const value =
+      c.resolved_value != null
+        ? c.resolved_value
+        : c.status === "match"
+          ? (c.doc_a_value ?? c.doc_b_value ?? "")
+          : "";
+    return { field, value };
+  };
 
+  const handleExportCSV = () => {
+    const headers = ["Field", "Value"];
     const rows = checks.map((c) => {
-      const resolvedVal =
-        c.resolved_value ?? (c.status === "match" ? (c.doc_a_value ?? c.doc_b_value ?? "") : "");
-      return [
-        escapeCsvCell(c.pair_label),
-        escapeCsvCell(c.field_label),
-        escapeCsvCell(c.field),
-        escapeCsvCell(c.scope),
-        escapeCsvCell(c.line_item_key ?? ""),
-        escapeCsvCell(c.status),
-        escapeCsvCell(DOC_LABELS[c.doc_a_type] ?? c.doc_a_type),
-        escapeCsvCell(c.doc_a_value ?? ""),
-        escapeCsvCell(DOC_LABELS[c.doc_b_type] ?? c.doc_b_type),
-        escapeCsvCell(c.doc_b_value ?? ""),
-        escapeCsvCell(resolvedVal),
-        escapeCsvCell(c.resolved_by ?? ""),
-        escapeCsvCell(c.note ?? ""),
-      ].join(",");
+      const { field, value } = getFieldAndValue(c);
+      return [escapeCsvCell(field), escapeCsvCell(value)].join(",");
     });
 
     const csvContent = [headers.join(","), ...rows].join("\r\n");
@@ -358,24 +349,7 @@ function PreviewModal({
   };
 
   const handleExportJSON = () => {
-    const data = checks.map((c) => ({
-      pair: c.pair,
-      pair_label: c.pair_label,
-      field: c.field,
-      field_label: c.field_label,
-      scope: c.scope,
-      line_item_key: c.line_item_key,
-      status: c.status,
-      doc_a_type: c.doc_a_type,
-      doc_a_value: c.doc_a_value,
-      doc_b_type: c.doc_b_type,
-      doc_b_value: c.doc_b_value,
-      resolved_value:
-        c.resolved_value ?? (c.status === "match" ? (c.doc_a_value ?? c.doc_b_value ?? "") : null),
-      resolved_by: c.resolved_by,
-      note: c.note,
-    }));
-
+    const data = checks.map((c) => getFieldAndValue(c));
     const jsonContent = JSON.stringify(data, null, 2);
     downloadFile(jsonContent, `shipment-${shipmentId.slice(0, 8)}-preview.json`, "application/json");
   };
@@ -388,42 +362,19 @@ function PreviewModal({
         <table border="1">
           <thead>
             <tr style="background-color: #4f46e5; color: #ffffff; font-weight: bold;">
-              <th>Document Pair</th>
-              <th>Field Label</th>
-              <th>Field Key</th>
-              <th>Scope</th>
-              <th>Line Item</th>
-              <th>Status</th>
-              <th>Doc A Type</th>
-              <th>Doc A Value</th>
-              <th>Doc B Type</th>
-              <th>Doc B Value</th>
-              <th>Final Resolved Value</th>
-              <th>Resolved By</th>
-              <th>Note</th>
+              <th>Field</th>
+              <th>Value</th>
             </tr>
           </thead>
           <tbody>
     `;
 
     for (const c of checks) {
-      const resolvedVal =
-        c.resolved_value ?? (c.status === "match" ? (c.doc_a_value ?? c.doc_b_value ?? "") : "");
+      const { field, value } = getFieldAndValue(c);
       tableHtml += `
         <tr>
-          <td>${c.pair_label}</td>
-          <td>${c.field_label}</td>
-          <td>${c.field}</td>
-          <td>${c.scope}</td>
-          <td>${c.line_item_key ?? ""}</td>
-          <td>${c.status}</td>
-          <td>${DOC_LABELS[c.doc_a_type] ?? c.doc_a_type}</td>
-          <td>${c.doc_a_value ?? ""}</td>
-          <td>${DOC_LABELS[c.doc_b_type] ?? c.doc_b_type}</td>
-          <td>${c.doc_b_value ?? ""}</td>
-          <td>${resolvedVal}</td>
-          <td>${c.resolved_by ?? ""}</td>
-          <td>${c.note ?? ""}</td>
+          <td>${escapeHtml(field)}</td>
+          <td>${escapeHtml(value)}</td>
         </tr>
       `;
     }
